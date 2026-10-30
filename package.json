@@ -1,0 +1,27 @@
+{
+  "name": "qa-automation-playwright",
+  "version": "1.0.0",
+  "description": "Suíte de automação de testes E2E, API, SQL e acessibilidade com Playwright + TypeScript",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:e2e": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:api": "playwright test --project=api",
+    "test:headed": "playwright test --project=chromium --headed",
+    "test:postman": "newman run postman/dummyjson.postman_collection.json -r cli,htmlextra --reporter-htmlextra-export reports/postman/index.html",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "Victor Giovani de Oliveira",
+  "license": "MIT",
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "newman": "^6.2.3",
+    "newman-reporter-htmlextra": "^1.23.1",
+    "typescript": "^7.0.2"
+  }
+}

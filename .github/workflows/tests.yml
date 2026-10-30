@@ -1,0 +1,82 @@
+name: Testes automatizados
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 11 * * 1-5' # execução diária (08h BRT) para detectar regressões
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: Playwright (E2E, API, SQL, a11y) + Postman
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos (TypeScript)
+        run: npm run typecheck
+
+      - name: Instalar navegadores
+        run: npx playwright install --with-deps
+
+      - name: Testes Playwright
+        run: npx playwright test
+
+      - name: Testes Postman (Newman)
+        if: always()
+        run: npm run test:postman
+
+      - name: Montar página de relatórios
+        if: always()
+        run: |
+          mkdir -p site
+          cp -r reports/playwright site/playwright
+          cp -r reports/postman site/postman
+          cp docs/report-index.html site/index.html
+
+      - name: Salvar relatórios como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios
+          path: site
+          retention-days: 14
+
+      - name: Preparar publicação no GitHub Pages
+        if: always() && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Publicar relatórios
+    needs: tests
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
