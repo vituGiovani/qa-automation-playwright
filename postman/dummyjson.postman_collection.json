@@ -1,274 +1,280 @@
 {
-  "info": {
-    "name": "DummyJSON – Testes de API",
-    "description": "Coleção de testes de API REST executada no CI via Newman.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "https://dummyjson.com"
-    }
-  ],
-  "item": [
-    {
-      "name": "Autenticação",
-      "item": [
-        {
-          "name": "Login válido",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"emilys\",\n  \"password\": \"emilyspass\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const body = pm.response.json();",
-                  "pm.test('Retorna accessToken', () => pm.expect(body.accessToken).to.be.a('string').and.not.empty);",
-                  "pm.test('Tempo de resposta < 2s', () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "pm.collectionVariables.set('token', body.accessToken);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Login inválido",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"emilys\",\n  \"password\": \"errada\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
-                  "pm.test('Mensagem de erro', () => pm.expect(pm.response.json().message).to.eql('Invalid credentials'));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Rota protegida com token",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Usuário correto', () => pm.expect(pm.response.json().username).to.eql('emilys'));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Rota protegida sem token",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Produtos",
-      "item": [
-        {
-          "name": "Listar com paginação",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/products?limit=10&skip=5",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "skip",
-                  "value": "5"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const body = pm.response.json();",
-                  "pm.test('Retorna 10 produtos', () => pm.expect(body.products).to.have.lengthOf(10));",
-                  "pm.test('Primeiro id = 6', () => pm.expect(body.products[0].id).to.eql(6));",
-                  "const schema = { type: 'object', required: ['products','total','skip','limit'], properties: { products: { type: 'array', items: { type: 'object', required: ['id','title','price'], properties: { id: {type:'integer'}, title: {type:'string'}, price: {type:'number'} } } } } };",
-                  "pm.test('Contrato (JSON Schema)', () => pm.response.to.have.jsonSchema(schema));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Produto inexistente",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/products/999999",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "999999"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Criar produto",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/products/add",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "products",
-                "add"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Produto QA\",\n  \"price\": 99.9\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Retorna dados enviados', () => pm.expect(pm.response.json().title).to.eql('Produto QA'));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    "info":  {
+                 "name":  "DummyJSON – Testes de API",
+                 "description":  "Coleção de testes de API REST executada no CI via Newman.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "https://dummyjson.com"
+                     }
+                 ],
+    "item":  [
+                 {
+                     "name":  "Autenticação",
+                     "item":  [
+                                  {
+                                      "name":  "Rota protegida sem token",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/me",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "me"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 401\u0027, () =\u003e pm.response.to.have.status(401));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Login válido",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/login",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"emilys\",\n  \"password\": \"emilyspass\"\n}"
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const body = pm.response.json();",
+                                                                                    "pm.test(\u0027Retorna accessToken\u0027, () =\u003e pm.expect(body.accessToken).to.be.a(\u0027string\u0027).and.not.empty);",
+                                                                                    "pm.test(\u0027Tempo de resposta \u003c 2s\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                                                                                    "pm.collectionVariables.set(\u0027token\u0027, body.accessToken);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Login inválido",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/login",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"emilys\",\n  \"password\": \"errada\"\n}"
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 400\u0027, () =\u003e pm.response.to.have.status(400));",
+                                                                                    "pm.test(\u0027Mensagem de erro\u0027, () =\u003e pm.expect(pm.response.json().message).to.eql(\u0027Invalid credentials\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Rota protegida com token",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/me",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "me"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "pm.test(\u0027Usuário correto\u0027, () =\u003e pm.expect(pm.response.json().username).to.eql(\u0027emilys\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Produtos",
+                     "item":  [
+                                  {
+                                      "name":  "Listar com paginação",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/products?limit=10\u0026skip=5",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "products"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "limit",
+                                                                                    "value":  "10"
+                                                                                },
+                                                                                {
+                                                                                    "key":  "skip",
+                                                                                    "value":  "5"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const body = pm.response.json();",
+                                                                                    "pm.test(\u0027Retorna 10 produtos\u0027, () =\u003e pm.expect(body.products).to.have.lengthOf(10));",
+                                                                                    "pm.test(\u0027Primeiro id = 6\u0027, () =\u003e pm.expect(body.products[0].id).to.eql(6));",
+                                                                                    "const schema = { type: \u0027object\u0027, required: [\u0027products\u0027,\u0027total\u0027,\u0027skip\u0027,\u0027limit\u0027], properties: { products: { type: \u0027array\u0027, items: { type: \u0027object\u0027, required: [\u0027id\u0027,\u0027title\u0027,\u0027price\u0027], properties: { id: {type:\u0027integer\u0027}, title: {type:\u0027string\u0027}, price: {type:\u0027number\u0027} } } } } };",
+                                                                                    "pm.test(\u0027Contrato (JSON Schema)\u0027, () =\u003e pm.response.to.have.jsonSchema(schema));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Produto inexistente",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/products/999999",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "products",
+                                                                               "999999"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 404\u0027, () =\u003e pm.response.to.have.status(404));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Criar produto",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/products/add",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "products",
+                                                                               "add"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"Produto QA\",\n  \"price\": 99.9\n}"
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "pm.test(\u0027Retorna dados enviados\u0027, () =\u003e pm.expect(pm.response.json().title).to.eql(\u0027Produto QA\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ]
 }
